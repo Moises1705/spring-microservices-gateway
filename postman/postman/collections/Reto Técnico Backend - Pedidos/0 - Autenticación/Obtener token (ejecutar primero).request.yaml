@@ -1,0 +1,23 @@
+$kind: http-request
+description: ""
+url: "{{keycloakUrl}}/realms/reto-realm/protocol/openid-connect/token"
+method: POST
+body:
+  type: urlencoded
+  content:
+    grant_type: password
+    client_id: reto-api
+    client_secret: "{{clientSecret}}"
+    username: "{{username}}"
+    password: "{{password}}"
+auth:
+  type: noauth
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status 200', () => pm.response.to.have.status(200));
+      const json = pm.response.json();
+      pm.collectionVariables.set('token', json.access_token);
+      pm.test('Se recibió access_token', () => pm.expect(json.access_token).to.be.a('string'));
+    language: text/javascript
+order: 1000

@@ -1,0 +1,14 @@
+$kind: http-request
+url: "{{gatewayUrl}}/api/v1/orders/00000000-0000-0000-0000-000000000000"
+method: GET
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('404 ORDER_NOT_FOUND', () => {
+        pm.response.to.have.status(404);
+        const json = pm.response.json();
+        pm.expect(json.code).to.eql('ORDER_NOT_FOUND');
+        pm.expect(json.traceId).to.be.a('string');
+      });
+    language: text/javascript
+order: 9000

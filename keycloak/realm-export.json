@@ -1,0 +1,55 @@
+{
+  "realm": "reto-realm",
+  "enabled": true,
+  "accessTokenLifespan": 1800,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "roles": {
+    "realm": [
+      {
+        "name": "USER",
+        "description": "Usuario estándar de la API"
+      },
+      {
+        "name": "ADMIN",
+        "description": "Administrador de la API"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "reto-api",
+      "name": "reto-api",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "reto-api-dev-secret",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false
+    }
+  ],
+  "users": [
+    {
+      "username": "testuser",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Test",
+      "lastName": "User",
+      "email": "testuser@reto.local",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "test1234",
+          "temporary": false
+        }
+      ],
+      "requiredActions": [],
+      "realmRoles": [
+        "USER"
+      ]
+    }
+  ]
+}

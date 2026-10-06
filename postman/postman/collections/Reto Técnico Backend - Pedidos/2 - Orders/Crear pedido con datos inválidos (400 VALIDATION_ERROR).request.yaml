@@ -1,0 +1,23 @@
+$kind: http-request
+url: "{{gatewayUrl}}/api/v1/orders"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "customerId": "",
+      "items": []
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('400 VALIDATION_ERROR', () => {
+        pm.response.to.have.status(400);
+        const json = pm.response.json();
+        pm.expect(json.code).to.eql('VALIDATION_ERROR');
+        pm.expect(json.traceId).to.be.a('string');
+      });
+    language: text/javascript
+order: 10000

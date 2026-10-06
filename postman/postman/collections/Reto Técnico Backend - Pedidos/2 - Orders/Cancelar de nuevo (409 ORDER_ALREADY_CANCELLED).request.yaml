@@ -1,0 +1,14 @@
+$kind: http-request
+url: "{{gatewayUrl}}/api/v1/orders/{{orderId}}/cancel"
+method: PATCH
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('409 ORDER_ALREADY_CANCELLED', () => {
+        pm.response.to.have.status(409);
+        const json = pm.response.json();
+        pm.expect(json.code).to.eql('ORDER_ALREADY_CANCELLED');
+        pm.expect(json.traceId).to.be.a('string');
+      });
+    language: text/javascript
+order: 5000

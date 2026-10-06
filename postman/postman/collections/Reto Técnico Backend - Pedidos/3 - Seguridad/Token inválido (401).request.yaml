@@ -1,0 +1,16 @@
+$kind: http-request
+url: "{{gatewayUrl}}/api/v1/orders"
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{auth_secret_06yh}}"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('401 TOKEN_INVALID_OR_EXPIRED', () => {
+        pm.response.to.have.status(401);
+        pm.expect(pm.response.json().code).to.eql('TOKEN_INVALID_OR_EXPIRED');
+      });
+    language: text/javascript
+order: 2000

@@ -1,0 +1,25 @@
+$kind: http-request
+url: "{{gatewayUrl}}/api/v1/orders"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "customerId": "c-postman-fail",
+      "items": [
+        { "productId": "{{productId}}", "quantity": 999999 }
+      ]
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('409 STOCK_INSUFFICIENT', () => {
+        pm.response.to.have.status(409);
+        const json = pm.response.json();
+        pm.expect(json.code).to.eql('STOCK_INSUFFICIENT');
+        pm.expect(json.traceId).to.be.a('string');
+      });
+    language: text/javascript
+order: 6000

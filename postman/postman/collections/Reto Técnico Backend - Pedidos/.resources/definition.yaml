@@ -1,0 +1,55 @@
+$kind: collection
+description: Colección para probar la API a través del API Gateway ([http://localhost:8080](http://localhost:8080)). Ejecutar primero '0 - Autenticación > Obtener token'. Requiere 'docker compose up --build'.
+variables:
+  - key: gatewayUrl
+    value: http://localhost:8080
+    disabled: false
+    secret: false
+  - key: keycloakUrl
+    value: http://localhost:8180
+    disabled: false
+    secret: false
+  - key: clientSecret
+    value: reto-api-dev-secret
+    disabled: false
+    secret: false
+  - key: username
+    value: testuser
+    disabled: false
+    secret: false
+  - key: password
+    value: test1234
+    disabled: false
+    secret: false
+  - key: token
+    value: ""
+    disabled: false
+    secret: false
+  - key: productId
+    value: ""
+    disabled: false
+    secret: false
+  - key: orderId
+    value: ""
+    disabled: false
+    secret: false
+  - key: failedOrderId
+    value: ""
+    disabled: false
+    secret: false
+  - key: auth_secret_06yh
+    secret: true
+    disabled: false
+scripts:
+  - type: http:beforeRequest
+    code: |-
+      if (!pm.request.headers.has('X-Trace-Id')) {
+        pm.request.headers.add({ key: 'X-Trace-Id', value: 'postman-' + Date.now() });
+      }
+    language: text/javascript
+auth:
+  - id: d5c43644-55af-4787-b9d7-4631f8948ab3
+    type: bearer
+    name: bearer auth
+    credentials:
+      token: "{{token}}"

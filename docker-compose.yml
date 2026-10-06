@@ -1,0 +1,104 @@
+services:
+
+  postgres-inventory:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${POSTGRES_INVENTORY_DB:-inventory_db}
+      POSTGRES_USER: ${POSTGRES_INVENTORY_USER:-inventory_user}
+      POSTGRES_PASSWORD: ${POSTGRES_INVENTORY_PASSWORD:?Define POSTGRES_INVENTORY_PASSWORD en .env}
+    ports:
+      - "5433:5432"   # solo para inspección local (DBeaver/psql)
+    volumes:
+      - postgres-inventory-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  postgres-order:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${POSTGRES_ORDER_DB:-order_db}
+      POSTGRES_USER: ${POSTGRES_ORDER_USER:-order_user}
+      POSTGRES_PASSWORD: ${POSTGRES_ORDER_PASSWORD:?Define POSTGRES_ORDER_PASSWORD en .env}
+    ports:
+      - "5434:5432"   # solo para inspección local (DBeaver/psql)
+    volumes:
+      - postgres-order-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.7
+    command: start-dev --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Define KEYCLOAK_ADMIN_PASSWORD en .env}
+      # URL pública fija: el claim "iss" de los tokens queda siempre igual
+      KC_HOSTNAME: http://localhost:8180
+    ports:
+      - "8180:8080"
+    volumes:
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+
+  inventory-service:
+    build: ./inventory-service
+    depends_on:
+      postgres-inventory:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-inventory:5432/${POSTGRES_INVENTORY_DB:-inventory_db}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_INVENTORY_USER:-inventory_user}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_INVENTORY_PASSWORD:?Define POSTGRES_INVENTORY_PASSWORD en .env}
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://localhost:8180/realms/reto-realm
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/reto-realm/protocol/openid-connect/certs
+    # sin "ports": no es accesible desde fuera, solo desde la red Docker
+
+  order-service:
+    build: ./order-service
+    depends_on:
+      postgres-order:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+      inventory-service:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-order:5432/${POSTGRES_ORDER_DB:-order_db}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_ORDER_USER:-order_user}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_ORDER_PASSWORD:?Define POSTGRES_ORDER_PASSWORD en .env}
+      INVENTORY_SERVICE_BASE_URL: http://inventory-service:8082
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://localhost:8180/realms/reto-realm
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/reto-realm/protocol/openid-connect/certs
+    # sin "ports": no es accesible desde fuera
+
+  api-gateway:
+    build: ./api-gateway
+    depends_on:
+      keycloak:
+        condition: service_started
+      inventory-service:
+        condition: service_started
+      order-service:
+        condition: service_started
+    ports:
+      - "8080:8080"   # único punto público del sistema (junto con Keycloak para pedir tokens)
+    environment:
+      INVENTORY_SERVICE_BASE_URL: http://inventory-service:8082
+      ORDER_SERVICE_BASE_URL: http://order-service:8081
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://localhost:8180/realms/reto-realm
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/reto-realm/protocol/openid-connect/certs
+
+volumes:
+  postgres-inventory-data:
+  postgres-order-data:
+
+networks:
+  default:
+    name: reto-network

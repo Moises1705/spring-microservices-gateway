@@ -1,0 +1,14 @@
+$kind: http-request
+url: "{{gatewayUrl}}/api/v1/orders/{{orderId}}/history"
+method: GET
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status 200', () => pm.response.to.have.status(200));
+      const h = pm.response.json().history;
+      pm.test('Historial con secuencia creciente', () => {
+        pm.expect(h.length).to.be.at.least(2);
+        h.forEach((e, i) => pm.expect(e.sequenceNumber).to.eql(i + 1));
+      });
+    language: text/javascript
+order: 3000

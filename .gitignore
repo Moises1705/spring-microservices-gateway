@@ -1,0 +1,15 @@
+target/
+build/
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+.env
+application-local.properties
+application-local.yml
+*.log
+*.hprof
+HELP.md
+.mvn/wrapper/maven-wrapper.jar

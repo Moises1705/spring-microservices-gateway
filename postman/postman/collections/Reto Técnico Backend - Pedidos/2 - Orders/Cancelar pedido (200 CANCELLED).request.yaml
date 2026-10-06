@@ -1,0 +1,10 @@
+$kind: http-request
+url: "{{gatewayUrl}}/api/v1/orders/{{orderId}}/cancel"
+method: PATCH
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status 200', () => pm.response.to.have.status(200));
+      pm.test('Estado CANCELLED', () => pm.expect(pm.response.json().status).to.eql('CANCELLED'));
+    language: text/javascript
+order: 4000

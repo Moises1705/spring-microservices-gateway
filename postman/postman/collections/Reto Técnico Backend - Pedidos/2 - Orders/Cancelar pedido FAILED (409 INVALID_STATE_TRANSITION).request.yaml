@@ -1,0 +1,14 @@
+$kind: http-request
+url: "{{gatewayUrl}}/api/v1/orders/{{failedOrderId}}/cancel"
+method: PATCH
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('409 INVALID_STATE_TRANSITION', () => {
+        pm.response.to.have.status(409);
+        const json = pm.response.json();
+        pm.expect(json.code).to.eql('INVALID_STATE_TRANSITION');
+        pm.expect(json.traceId).to.be.a('string');
+      });
+    language: text/javascript
+order: 8000

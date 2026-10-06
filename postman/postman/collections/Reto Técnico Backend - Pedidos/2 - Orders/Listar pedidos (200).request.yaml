@@ -1,0 +1,13 @@
+$kind: http-request
+url: "{{gatewayUrl}}/api/v1/orders"
+method: GET
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status 200', () => pm.response.to.have.status(200));
+      const orders = pm.response.json();
+      pm.test('Devuelve una lista', () => pm.expect(orders).to.be.an('array'));
+      const failed = orders.find(o => o.status === 'FAILED');
+      if (failed) { pm.collectionVariables.set('failedOrderId', failed.id); }
+    language: text/javascript
+order: 7000
