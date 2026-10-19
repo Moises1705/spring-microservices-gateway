@@ -65,7 +65,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
 
       - name: Trivy - reporte completo (informativo)
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@v0.33.1
         with:
           image-ref: ${{ env.IMAGE }}
           format: table
@@ -74,7 +74,7 @@ jobs:
           exit-code: "0"
 
       - name: Trivy - SARIF
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@v0.33.1
         with:
           image-ref: ${{ env.IMAGE }}
           format: sarif
@@ -110,7 +110,7 @@ jobs:
             trivy-${{ matrix.service }}.sarif
 
       - name: Trivy - umbral (falla con CRITICAL/HIGH con fix disponible)
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@v0.33.1
         with:
           image-ref: ${{ env.IMAGE }}
           format: table
@@ -124,7 +124,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Trivy fs
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@v0.33.1
         with:
           scan-type: fs
           scan-ref: .
