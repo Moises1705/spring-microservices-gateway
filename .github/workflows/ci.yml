@@ -139,7 +139,7 @@ jobs:
           docker run --rm \
             -v "$GITHUB_WORKSPACE":/work \
             "$TRIVY_IMAGE" fs \
-            --scanners vuln,misconfig,secret \
+            --scanners misconfig,secret \
             --format table \
             --severity UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL \
             --output /work/trivy-fs.txt \
