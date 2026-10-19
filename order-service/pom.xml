@@ -31,6 +31,8 @@
         <!-- Versiones corregidas de Jackson (CVE-2026-89407, 89425, 68497, 91776, 91777). Quitar cuando Spring Boot 4.1.2 las incluya -->
         <jackson-2-bom.version>2.21.7</jackson-2-bom.version>
         <jackson-bom.version>3.1.7</jackson-bom.version>
+        <!-- Tomcat 11.0.24 tiene 3 CVE CRITICAL (CVE-2026-65182, 65905, 68525); corregido en 11.0.25. Quitar cuando Spring Boot lo incluya -->
+        <tomcat.version>11.0.25</tomcat.version>
     </properties>
     <dependencies>
         <dependency>
