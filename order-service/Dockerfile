@@ -6,7 +6,8 @@ RUN --mount=type=cache,target=/root/.m2 mvn -B -q package -DskipTests
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app
-RUN useradd --system --no-create-home appuser
+# Se elimina pebble (binario Go de la imagen base, sin uso aqui): trae CVEs HIGH de stdlib
+RUN useradd --system --no-create-home appuser && rm -f /usr/bin/pebble
 COPY --from=build /app/target/*.jar app.jar
 USER appuser
 EXPOSE 8081
