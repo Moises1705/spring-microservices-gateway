@@ -271,7 +271,7 @@ Cada microservicio se organiza en capas: controller, service (interfaz + impleme
 
 [![CI](https://github.com/Moises1705/spring-microservices-gateway/actions/workflows/ci.yml/badge.svg)](https://github.com/Moises1705/spring-microservices-gateway/actions/workflows/ci.yml)
 
-Workflow: `.github/workflows/ci.yml`. Corre en cada push a `main` y `cicd`, en pull requests y de forma manual.
+Workflow: `.github/workflows/ci.yml`. Corre en cada push a `main` y `cicd`, en pull requests, de forma manual y cada lunes a las 12:00 UTC (escaneo programado, porque la base de vulnerabilidades de Trivy cambia a diario).
 
 | Job | Qué hace |
 |-----|----------|
@@ -298,7 +298,7 @@ Estado: el pipeline corre en verde (run #8, commit `c355891`, 2026-10-19). Escá
   - `pcre2`: 8 CVE MEDIUM (lecturas y escrituras fuera de límites con expresiones regulares manipuladas).
   - `gnutls`: 5; `glibc`: 2 CVE repetidos en 4 paquetes; `tar`: 2; `dash`: 2; y 1 cada uno en `zlib1g`, `libexpat1`, `wget` (CVE-2021-31879, antiguo), `p11-kit` y `cyrus-sasl`. En LOW: `systemd/udev` y `shadow-utils`.
   - Valoración: la aplicación se ejecuta con `java -jar` y no invoca esas utilidades. glibc y zlib sí los carga la JVM; no se analizó si los defectos son alcanzables, por lo que se recomienda reconstruir la imagen periódicamente para recoger parches.
-- **Dockerfiles:** DS-0026 (LOW) en los 3: falta la instrucción `HEALTHCHECK`. Queda como mejora pendiente.
+- **Dockerfiles:** sin hallazgos. DS-0026 (LOW, falta `HEALTHCHECK`) se corrigió añadiendo a los 3 Dockerfiles un `HEALTHCHECK` TCP con bash sobre el puerto del servicio; comprueba que la aplicación aceptó conexiones, no la conexión a la base de datos.
 - **Secretos:** el escáner no reportó ninguno.
 
 Para actualizar Trivy, se cambia el digest en `TRIVY_IMAGE` del workflow y se revisa el resultado.
