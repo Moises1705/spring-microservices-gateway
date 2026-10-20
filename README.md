@@ -265,3 +265,40 @@ Cada microservicio se organiza en capas: controller, service (interfaz + impleme
 | Token endpoint            | http://localhost:8180/realms/reto-realm/protocol/openid-connect/token |
 | PostgreSQL Inventory      | localhost:5433 (usuario y contraseña definidos en `.env`) |
 | PostgreSQL Order          | localhost:5434 (usuario y contraseña definidos en `.env`) |
+
+
+## Seguridad y pipeline CI
+
+[![CI](https://github.com/Moises1705/spring-microservices-gateway/actions/workflows/ci.yml/badge.svg)](https://github.com/Moises1705/spring-microservices-gateway/actions/workflows/ci.yml)
+
+Workflow: `.github/workflows/ci.yml`. Corre en cada push a `main` y `cicd`, en pull requests y de forma manual.
+
+| Job | Qué hace |
+|-----|----------|
+| Tests (x3) | `./mvnw test` por servicio. En order-service e inventory-service se excluyen los `*ApplicationTests`, porque levantan el contexto completo y necesitan PostgreSQL y Keycloak. |
+| Build + Trivy (x3) | Construye la imagen Docker del servicio y la escanea con Trivy: reporte completo (informativo), SARIF y artefactos. Un último paso falla el job si hay CRITICAL o HIGH con corrección disponible (`--ignore-unfixed`). |
+| Trivy fs | Escanea Dockerfiles (configuración) y secretos del repositorio. Excluye los `pom.xml`: Trivy consultaba Maven Central y recibía 429; las dependencias de las apps ya se analizan al escanear el JAR dentro de la imagen. |
+
+Estado: el pipeline corre en verde (run #8, commit `c355891`, 2026-10-19). Escáner: Trivy 0.76.0 (imagen `aquasec/trivy@sha256:2416d1f74045b57274df1a340eee6b510cacd73c66a6ccb8da092b117eb7d222`, fijada por digest para que el escaneo sea reproducible). Los reportes completos de cada run están en la pestaña Summary y en los artefactos `trivy-*`.
+
+### Hallazgos corregidos al integrar el escáner
+
+| Hallazgo | Dónde | Severidad | Corrección |
+|----------|-------|-----------|------------|
+| 3 CVE en la stdlib de Go (CVE-2026-78667, CVE-2026-78669, CVE-2026-97031) | Binario `/usr/bin/pebble` de la imagen base `eclipse-temurin:21-jre` | HIGH | Se elimina el binario en los 3 Dockerfiles; la aplicación no lo usa. |
+| Jackson 2.21.5 y 3.1.5 (CVE-2026-89407, 89425, 68497, 91776, 91777) | Los 3 servicios | HIGH | Se fuerzan `jackson-2-bom.version` = 2.21.7 y `jackson-bom.version` = 3.1.7 en los `pom.xml`. Quitar el override cuando Spring Boot incorpore estas versiones (issues #52012 y #52013, hito 4.1.2). |
+| Bouncy Castle `bcprov-jdk18on` 1.81.1 (CVE-2026-8763, CVE-2026-13506) | api-gateway, vía `spring-cloud-starter` | CRITICAL y HIGH | Se fija la versión 1.85 en el `dependencyManagement`. |
+| Tomcat embebido 11.0.24 (CVE-2026-65182, CVE-2026-65905, CVE-2026-68525) | Servicios con Spring MVC | CRITICAL | Se fuerza `tomcat.version` = 11.0.25 en los `pom.xml`. |
+
+### Hallazgos abiertos (último run)
+
+- **Aplicación (`app.jar`):** 0 hallazgos en los 3 servicios.
+- **Imágenes:** 57 hallazgos en paquetes de Ubuntu 26.04 de la imagen base, idénticos en los 3 servicios: 53 MEDIUM, 4 LOW, 0 HIGH, 0 CRITICAL (unos 46 CVE distintos; algunos afectan a varios paquetes). Todos tienen estado `affected` y ninguno tiene versión corregida, así que no bloquean el pipeline y no se pueden resolver desde el proyecto hasta que Ubuntu o Temurin publiquen parches.
+  - `rust-coreutils` (uutils): 20 CVE MEDIUM en utilidades de línea de comandos (cp, mv, dd, etc.).
+  - `pcre2`: 8 CVE MEDIUM (lecturas y escrituras fuera de límites con expresiones regulares manipuladas).
+  - `gnutls`: 5; `glibc`: 2 CVE repetidos en 4 paquetes; `tar`: 2; `dash`: 2; y 1 cada uno en `zlib1g`, `libexpat1`, `wget` (CVE-2021-31879, antiguo), `p11-kit` y `cyrus-sasl`. En LOW: `systemd/udev` y `shadow-utils`.
+  - Valoración: la aplicación se ejecuta con `java -jar` y no invoca esas utilidades. glibc y zlib sí los carga la JVM; no se analizó si los defectos son alcanzables, por lo que se recomienda reconstruir la imagen periódicamente para recoger parches.
+- **Dockerfiles:** DS-0026 (LOW) en los 3: falta la instrucción `HEALTHCHECK`. Queda como mejora pendiente.
+- **Secretos:** el escáner no reportó ninguno.
+
+Para actualizar Trivy, se cambia el digest en `TRIVY_IMAGE` del workflow y se revisa el resultado.

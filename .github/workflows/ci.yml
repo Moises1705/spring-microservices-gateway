@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 env:
-  TRIVY_IMAGE: aquasec/trivy:latest
+  TRIVY_IMAGE: aquasec/trivy@sha256:2416d1f74045b57274df1a340eee6b510cacd73c66a6ccb8da092b117eb7d222
 
 jobs:
   test:
