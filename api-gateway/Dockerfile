@@ -11,4 +11,6 @@ RUN useradd --system --no-create-home appuser && rm -f /usr/bin/pebble
 COPY --from=build /app/target/*.jar app.jar
 USER appuser
 EXPOSE 8080
+# Healthcheck TCP con bash (sin depender de curl ni wget): el puerto acepta conexiones
+HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 CMD ["bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080"]
 ENTRYPOINT ["java", "-jar", "app.jar"]
